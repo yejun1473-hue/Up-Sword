@@ -162,39 +162,86 @@
 
         // 5. 검색
         function filterUsers() {
-            const val = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allUsers.filter(u => 
-                (u.email && u.email.toLowerCase().includes(val)) || 
-                (u.username && u.username.toLowerCase().includes(val))
-            );
-            renderUsers(filtered);
+            try {
+                const val = document.getElementById('searchInput').value.toLowerCase();
+                if (!val) {
+                    renderUsers(allUsers);
+                    return;
+                }
+                const filtered = allUsers.filter(u => 
+                    (u.email && u.email.toLowerCase().includes(val)) || 
+                    (u.nickname && u.nickname.toLowerCase().includes(val))
+                );
+                renderUsers(filtered);
+            } catch (error) {
+                console.error('검색 중 오류 발생:', error);
+                showNotification('검색 중 오류가 발생했습니다.', 'error');
+            }
         }
 
         // 6. 업데이트 (저장)
         async function updateUser(id) {
-            const gold = document.getElementById(`g-${id}`).value;
-            const money = document.getElementById(`m-${id}`).value;
-            const lvl = document.getElementById(`l-${id}`).value;
+            try {
+                const goldInput = document.getElementById(`g-${id}`);
+                const moneyInput = document.getElementById(`m-${id}`);
+                const lvlInput = document.getElementById(`l-${id}`);
+                
+                // 입력값 검증
+                const gold = parseInt(goldInput.value);
+                const money = parseInt(moneyInput.value);
+                const lvl = parseInt(lvlInput.value);
 
-            const { error } = await client.from('profiles').update({
-                gold: parseInt(gold),
-                money: parseInt(money),
-                current_sword_lvl: parseInt(lvl)
-            }).eq('id', id);
+                if (isNaN(gold) || isNaN(money) || isNaN(lvl)) {
+                    throw new Error('유효하지 않은 값이 있습니다.');
+                }
 
-            if (error) showNotification('저장 실패', 'error');
-            else {
+                if (lvl < 1 || lvl > 20) {
+                    throw new Error('레벨은 1에서 20 사이여야 합니다.');
+                }
+
+                const { error } = await client
+                    .from('profiles')
+                    .update({
+                        gold: gold,
+                        money: money,
+                        current_sword_lvl: lvl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+                
                 showNotification('저장 완료', 'success');
-                loadUsers();
+                await loadUsers();
+            } catch (error) {
+                console.error('업데이트 실패:', error);
+                showNotification(`저장 실패: ${error.message}`, 'error');
             }
         }
 
         // 7. 정지 토글
         async function toggleBan(id, status) {
-            if(!confirm('진행하시겠습니까?')) return;
-            const { error } = await client.from('profiles').update({ is_banned: status }).eq('id', id);
-            if (error) showNotification('처리 실패', 'error');
-            else loadUsers();
+            try {
+                if(!confirm(status ? '해당 사용자를 정지하시겠습니까?' : '정지를 해제하시겠습니까?')) {
+                    return;
+                }
+                
+                const { error } = await client
+                    .from('profiles')
+                    .update({ 
+                        is_banned: status,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+                
+                showNotification(status ? '사용자가 정지되었습니다.' : '정지가 해제되었습니다.', 'success');
+                await loadUsers();
+            } catch (error) {
+                console.error('처리 실패:', error);
+                showNotification(`처리 실패: ${error.message}`, 'error');
+            }
         }
 
         // 8. 기타 기능
