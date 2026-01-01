@@ -201,46 +201,50 @@
     <script>
         const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null;
         let allUsers = [];
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', async () => {
-            // 세션 확인
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'login.html';
-                return;
-            }
+            // 세션 스토리지에서 GM 인증 확인
+            const isGMAuthenticated = sessionStorage.getItem('gmAuthenticated') === 'true';
             
-            // 현재 사용자 정보 가져오기
-            const { data: userData } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-                
-            currentUser = userData;
-            
-            // 관리자 권한 확인 (이메일로 임시 확인)
-            if (userData.email !== 'admin@example.com') {
-                alert('권한이 없습니다.');
+            if (!isGMAuthenticated) {
+                alert('접근 권한이 없습니다.');
                 window.location.href = 'index.html';
                 return;
             }
             
+            // 현재 사용자 정보 설정 (GM으로 간주)
+            currentUser = {
+                id: 'gm-user',
+                email: 'gm@game.com',
+                username: 'Game Master',
+                role: 'admin'
+            };
+            
             // 이벤트 리스너 등록
             document.getElementById('logoutBtn').addEventListener('click', handleLogout);
             document.getElementById('searchInput').addEventListener('input', filterUsers);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    filterUsers();
+                }
+            });
             
             // 사용자 목록 로드
-            loadUsers();
+            try {
+                await loadUsers();
+            } catch (error) {
+                console.error('사용자 목록을 불러오는 중 오류 발생:', error);
+                showNotification('사용자 목록을 불러오는 중 오류가 발생했습니다.', 'error');
+            }
         });
         
         async function loadUsers() {
-            const { data: users, error } = await supabase
+            const { data: users, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -428,8 +432,9 @@
         }
         
         async function handleLogout() {
-            await supabase.auth.signOut();
-            window.location.href = 'login.html';
+            // 세션 스토리지에서 GM 인증 제거
+            sessionStorage.removeItem('gmAuthenticated');
+            window.location.href = 'index.html';
         }
         
         // 전역 함수로 노출
