@@ -15,6 +15,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        // Initialize Supabase client
+        document.addEventListener('DOMContentLoaded', function() {
+            const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+            window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        });
+    </script>
     <style>
         /* Pretendard 폰트 및 기본 테마 설정 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -121,10 +129,6 @@
 <div class="admin-trigger" onclick="adminAuth()"></div>
 
 <script>
-    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     let user = null;
     let isProcessing = false;
 
@@ -135,10 +139,10 @@
     };
 
     async function init() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
         if(!session) { location.href = "login.html"; return; }
 
-        const { data: p, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+        const { data: p, error } = await window.supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
         if(error || !p) { location.href = "login.html"; return; }
 
         user = p;
@@ -266,7 +270,7 @@
     };
 
     async function redeem() {
-        const code = prompt("코드 입력");
+        const code = prompt("쿠폰 코드를 입력하세요:");
         if (!code) return;
         
         try {
@@ -283,7 +287,7 @@
             user.gold += data.reward_gold;
             const { error: updateError } = await supabaseClient
                 .from('profiles')
-                .update({ gold: user.gold })\
+                .update({ gold: user.gold })
                 .eq('id', user.id);
                 
             if (updateError) throw updateError;
