@@ -1,1 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>codetbase - 고객센터</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #ccc; font-family: 'Pretendard', sans-serif; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; position: relative; }
+        
+        /* [수정] 홈 버튼 위치: 고객센터 제목 바로 옆으로 배치하기 위한 컨테이너 */
+        .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 60px; margin-bottom: 40px; width: 100%; max-width: 400px; }
+        h1 { font-size: 48px; font-weight: 900; margin: 0; }
+        .home-btn { background: #c2cfff; border: none; border-radius: 20px; padding: 8px 20px; font-weight: bold; cursor: pointer; text-decoration: none; color: black; font-size: 14px; white-space: nowrap; }
+        
+        .card { background: white; border-radius: 30px; width: 100%; max-width: 350px; padding: 30px; margin-bottom: 25px; box-sizing: border-box; text-align: left; }
+        .card h2 { margin: 0; font-size: 24px; font-weight: 900; }
+        .card p { color: #555; font-size: 16px; margin: 15px 0 20px 0; line-height: 1.4; }
+        
+        .action-btn { background: #c2cfff; border: none; border-radius: 15px; width: 100%; padding: 15px; font-size: 24px; font-weight: 900; cursor: pointer; text-align: center; text-decoration: none; color: black; display: block; }
 
+        /* [수정] 채팅 프레임 및 X 버튼: 컴퓨터에서도 박스 바로 옆에 뜨도록 설정 */
+        #chat-frame-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; }
+        .chat-wrapper { position: relative; width: 100%; max-width: 500px; height: 90%; margin: 5vh auto; background: white; border-radius: 20px; overflow: hidden; }
+        .close-chat { position: absolute; top: 10px; right: 10px; font-size: 24px; font-weight: bold; cursor: pointer; z-index: 10001; background: #eee; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #000; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 999; }
+        .modal-content { background: white; width: 85%; max-width: 350px; padding: 25px; border-radius: 25px; text-align: center; }
+        textarea { width: 100%; height: 150px; border: 1px solid #ddd; border-radius: 15px; padding: 15px; box-sizing: border-box; resize: none; margin-bottom: 15px; font-family: inherit; }
+        .send-btn { background: #2c3e50; color: white; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        .admin-btn { position: fixed; bottom: 20px; right: 20px; background: #c2cfff; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        #admin-panel { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0f0f0; z-index: 2000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        .report-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid #2c3e50; }
+        .report-tag { font-size: 12px; font-weight: bold; color: #777; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>고객센터</h1>
+        <a href="index.html" class="home-btn">홈</a>
+    </div>
+
+    <div class="card">
+        <h2>채팅</h2>
+        <p>문제가 생기셨나요?<br>빠르게 도와드릴게요.</p>
+        <button class="action-btn" onclick="openChat()">1:1 문의 하기</button>
+    </div>
+
+    <div class="card">
+        <h2>신고</h2>
+        <button class="action-btn" style="margin-top:20px;" onclick="openInput('신고')">버그, 오류 신고</button>
+    </div>
+
+    <div class="card">
+        <h2>의견</h2>
+        <p>기능 제안, 불편한 점, 등<br>자유롭게 말해주세요.</p>
+        <button class="action-btn" onclick="openInput('의견')">버그 신고</button>
+    </div>
+
+    <div class="admin-btn" onclick="checkAdmin()">admin</div>
+
+    <div id="chat-frame-container">
+        <div class="chat-wrapper">
+            <div class="close-chat" onclick="closeChat()">×</div>
+            <iframe src="https://sword-game.channel.io/home" style="width:100%; height:100%; border:none;"></iframe>
+        </div>
+    </div>
+
+    <div id="input-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title" style="margin-bottom:15px;"></h2>
+            <textarea id="input-text" placeholder="내용을 입력해주세요..."></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="send-btn" style="background:#888;" onclick="closeModal()">취소</button>
+                <button class="send-btn" id="submit-btn">보내기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>문의 내역 관리 (닉네임 포함)</h2>
+            <button class="send-btn" onclick="document.getElementById('admin-panel').style.display='none'">닫기</button>
+        </div>
+        <hr>
+        <div id="admin-list"></div>
+    </div>
+
+<script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentType = "";
+    let userNick = "익명";
+
+    // [추가] 로그인 체크 및 닉네임 가져오기
+    async function checkAuth() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(!session) { window.location.href="login.html"; return; }
+        
+        const { data: p } = await supabaseClient.from('profiles').select('nickname').eq('id', session.user.id).single();
+        if(p) userNick = p.nickname;
+    }
+
+    function openChat() { document.getElementById('chat-frame-container').style.display = 'block'; }
+    function closeChat() { document.getElementById('chat-frame-container').style.display = 'none'; }
+
+    function openInput(type) {
+        currentType = type;
+        document.getElementById('modal-title').innerText = type + " 작성";
+        document.getElementById('input-text').value = "";
+        document.getElementById('input-modal').style.display = 'flex';
+        
+        document.getElementById('submit-btn').onclick = async () => {
+            const content = document.getElementById('input-text').value;
+            if(!content) return alert("내용을 입력해주세요.");
+            
+            // [수정] nickname 컬럼에 현재 접속자 닉네임 저장
+            const { error } = await supabaseClient.from('support_tickets').insert([
+                { type: currentType, content: content, nickname: userNick, created_at: new Date() }
+            ]);
+
+            if(!error) {
+                alert("성공적으로 전달되었습니다.");
+                closeModal();
+            } else {
+                alert("전송 실패: " + error.message);
+            }
+        };
+    }
+
+    function closeModal() { document.getElementById('input-modal').style.display = 'none'; }
+
+    async function checkAdmin() {
+        const pw = prompt("관리자 비밀번호를 입력하세요.");
+        if(pw === '1234') {
+            document.getElementById('admin-panel').style.display = 'block';
+            loadAdminData();
+        } else {
+            alert("비밀번호가 틀렸습니다.");
+        }
+    }
+
+    async function loadAdminData() {
+        const { data, error } = await supabaseClient
+            .from('support_tickets')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if(error) return alert("데이터 로드 실패");
+
+        const list = document.getElementById('admin-list');
+        // [수정] 어드민 목록에 작성자 닉네임 표시
+        list.innerHTML = data.length === 0 ? "<p>내역이 없습니다.</p>" : data.map(item => `
+            <div class="report-item">
+                <span class="report-tag">[${item.type}] 작성자: ${item.nickname || '익명'} | ${new Date(item.created_at).toLocaleString()}</span>
+                <div style="font-size:16px; font-weight:bold;">${item.content}</div>
+            </div>
+        `).join('');
+    }
+
+    // 실행 시 로그인 체크 시작
+    checkAuth();
+</script>
+</body>
+</html>
