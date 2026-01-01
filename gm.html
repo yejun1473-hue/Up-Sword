@@ -203,10 +203,8 @@
         const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
         
-        // Initialize Supabase client if not already initialized
-        if (typeof supabase === 'undefined') {
-            window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
+        // Initialize Supabase client
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null;
         let allUsers = [];
@@ -257,7 +255,7 @@
         });
         
         async function loadUsers() {
-            const { data: users, error } = await supabaseClient
+            const { data: users, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
