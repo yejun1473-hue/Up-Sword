@@ -112,7 +112,7 @@
             list.innerHTML = users.map(u => `
                 <div class="user-card ${u.is_banned ? 'banned' : ''}">
                     <div class="user-info">
-                        <strong>${u.username || '이름 없음'}</strong> ${u.is_banned ? '<span style="color:red">(정지)</span>' : ''}
+                        <strong>${u.nickname || '이름 없음'}</strong> ${u.is_banned ? '<span style="color:red">(정지)</span>' : ''}
                         <div class="user-email">${u.email}</div>
                     </div>
                     <div class="user-stats">
