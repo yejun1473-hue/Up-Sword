@@ -289,10 +289,42 @@
         btn.innerText = "저장 중...";
         btn.disabled = true;
 
-        const newNick = document.getElementById('edit-nick').value;
-        const newPhone = document.getElementById('edit-phone').value;
+        const newNick = document.getElementById('edit-nick').value.trim();
+        const newPhone = document.getElementById('edit-phone').value.trim();
         const newAvatar = document.getElementById('edit-avatar-prev').src;
         const newPw = document.getElementById('edit-pw').value;
+
+        // Check if nickname is empty
+        if (!newNick) {
+            alert('닉네임을 입력해주세요.');
+            btn.innerText = "수정 내용 저장";
+            btn.disabled = false;
+            return;
+        }
+
+        // Only check for duplicate if nickname has changed
+        if (newNick !== user.nickname) {
+            try {
+                // Check if nickname already exists
+                const { data: existingUser, error: checkError } = await supabaseClient
+                    .from('profiles')
+                    .select('id')
+                    .eq('nickname', newNick)
+                    .single();
+
+                if (existingUser) {
+                    throw new Error('이미 사용 중인 닉네임입니다!');
+                }
+            } catch (error) {
+                if (error.message !== 'No rows found') {
+                    // If the error is not "not found" (which means nickname is available)
+                    btn.innerText = "수정 내용 저장";
+                    btn.disabled = false;
+                    alert(error.message);
+                    return;
+                }
+            }
+        }
 
         const updateData = {
             nickname: newNick,
@@ -316,7 +348,8 @@
             alert("정보가 수정되었습니다.");
             window.location.reload();
         } catch (e) {
-            alert("저장 실패: " + e.message);
+            console.error("저장 오류:", e);
+            alert("저장 실패: " + (e.message || '알 수 없는 오류가 발생했습니다.'));
             btn.innerText = "수정 내용 저장";
             btn.disabled = false;
         }

@@ -80,14 +80,15 @@
                         return;
                     }
                     
-                    // GM 권한 확인 (profiles 테이블의 is_gm 필드 확인)
+                    // GM 권한 확인 (profiles 테이블의 is_gm 필드 또는 닉네임으로 확인)
                     const { data: profile, error: profileError } = await client
                         .from('profiles')
-                        .select('is_gm')
+                        .select('is_gm, nickname')
                         .eq('id', session.user.id)
                         .single();
                         
-                    if (profileError || !profile?.is_gm) {
+                    // 닉네임이 '닉네임'이거나 is_gm이 true인 경우에만 접근 허용
+                    if (profileError || (!profile?.is_gm && profile?.nickname !== '닉네임')) {
                         alert('접근 권한이 없습니다.');
                         window.location.href = 'index.html';
                         return;
@@ -209,46 +210,40 @@
                 const lvl = parseInt(lvlInput.value, 10);
 
                 if (isNaN(gold) || isNaN(money) || isNaN(lvl)) {
-                    throw new Error('유효하지 않은 값이 있습니다.');
+                    throw new Error('유효하지 않은 값이 있습니다. 숫자만 입력해주세요.');
                 }
 
                 if (lvl < 1 || lvl > 20) {
                     throw new Error('레벨은 1에서 20 사이여야 합니다.');
                 }
 
-                // 업데이트할 데이터 준비
-                const updateData = {
-                    gold: gold,
-                    money: money,
-                    current_sword_lvl: lvl,
-                    updated_at: new Date().toISOString()
-                };
-
-                console.log('업데이트 데이터:', updateData); // 디버깅용
-
-                // PATCH 요청으로 변경
+                // 숫자로 변환된 값으로 업데이트
                 const { data, error } = await client
                     .from('profiles')
-                    .update(updateData)
+                    .update({
+                        gold: gold,
+                        money: money,
+                        current_sword_lvl: lvl,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('id', id)
-                    .select()
-                    .single();
-
-                console.log('업데이트 응답:', { data, error }); // 디버깅용
+                    .select();
 
                 if (error) {
+                    console.error('Supabase 오류 상세:', error);
                     if (error.code === '22P02') {
                         throw new Error('잘못된 데이터 형식입니다. 숫자만 입력해주세요.');
                     }
                     throw error;
                 }
                 
-                showNotification('저장 완료', 'success');
+                showNotification('저장이 완료되었습니다.', 'success');
+                // 변경사항 반영을 위해 사용자 목록 새로고침
                 await loadUsers();
             } catch (error) {
                 console.error('업데이트 실패:', error);
-                const errorMessage = error.message || '알 수 없는 오류가 발생했습니다.';
-                showNotification(`저장 실패: ${errorMessage}`, 'error');
+                const errorMessage = error.message || '데이터 저장 중 오류가 발생했습니다.';
+                showNotification(`오류: ${errorMessage}`, 'error');
             }
         }
 
