@@ -115,6 +115,11 @@
 
     async function handleUpgrade() {
         const s = swords[user.current_sword_lvl];
+        if (!s) {
+            console.error('No sword data found for level:', user.current_sword_lvl);
+            return alert('강화 정보를 불러오는데 실패했습니다.');
+        }
+        
         if(user.gold < s.upgrade_cost) return alert("골드 부족!");
         const img = document.getElementById('s-img');
         img.classList.add('hammering');
