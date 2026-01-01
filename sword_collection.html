@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>무기 도감</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #2d3748;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin: 20px 0 30px;
+            font-size: 2.2em;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: #4a5568;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        
+        .back-button:hover {
+            background: #2d3748;
+        }
+        
+        .weapon-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        
+        .weapon-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .weapon-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .weapon-image {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .weapon-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s;
+        }
+        
+        .weapon-card:hover .weapon-image img {
+            transform: scale(1.1);
+        }
+        
+        .weapon-name {
+            font-weight: 700;
+            margin: 10px 0 5px;
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+        
+        .weapon-name-en {
+            font-size: 0.8em;
+            color: #718096;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .hidden-item {
+            border: 2px solid #e53e3e;
+            position: relative;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+        }
+        
+        .hidden-item::after {
+            content: 'HIDDEN';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e53e3e;
+            color: white;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.5em;
+            margin: 30px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4a5568;
+            color: #2d3748;
+            font-weight: 700;
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 60%;
+            background: #4a5568;
+            border-radius: 3px;
+        }
+        
+        .placeholder-img {
+            width: 80%;
+            height: 80%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 0.8em;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        @media (max-width: 768px) {
+            .weapon-container {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 15px;
+                padding: 15px 0;
+            }
+            
+            .weapon-image {
+                width: 120px;
+                height: 120px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+                margin: 15px 0 25px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .weapon-container {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 12px;
+            }
+            
+            .weapon-image {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .weapon-name {
+                font-size: 1em;
+            }
+            
+            .weapon-name-en {
+                font-size: 0.75em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">
+        <i class="fas fa-arrow-left"></i> 뒤로 가기
+    </a>
+    
+    <h1>무기 도감</h1>
+    
+    <div class="weapon-container">
+        <div class="section-title">일반 검 (39개)</div>
+        
+        <!-- 검 목록 자동 생성 -->
+        <script>
+            const swords = [
+                {ko: "녹슨 검", en: "Rusty Sword"},
+                {ko: "단조된 검", en: "Forged Sword"},
+                {ko: "단단한 강철검", en: "Sturdy Steel Sword"},
+                {ko: "날카로운 장검", en: "Sharp Longsword"},
+                {ko: "정교한 레이피어", en: "Elegant Rapier"},
+                {ko: "빛나는 은검", en: "Shining Silver Sword"},
+                {ko: "성기사의 검", en: "Paladin's Sword"},
+                {ko: "용의 이빨 검", en: "Dragon's Fang"},
+                {ko: "천둥의 검", en: "Sword of Thunder"},
+                {ko: "불꽃의 발라드", en: "Ballad of Flames"},
+                {ko: "달빛의 수호검", en: "Moonlight Guardian"},
+                {ko: "태양의 광휘", en: "Radiance of the Sun"},
+                {ko: "심연의 파동검", en: "Abyssal Wave Blade"},
+                {ko: "성스러운 심판", en: "Divine Judgment"},
+                {ko: "혼돈의 인도자", en: "Harbinger of Chaos"},
+                {ko: "영원의 수호자", en: "Eternal Guardian"},
+                {ko: "신성한 빛의 검", en: "Sacred Lightblade"},
+                {ko: "태초의 파동", en: "Primordial Pulse"},
+                {ko: "창세의 파멸", en: "Genesis Ruin"},
+                {ko: "우주의 심판자", en: "Cosmic Arbiter"},
+                {ko: "신성한 불꽃의 검", en: "Sacred Flameblade"},
+                {ko: "빙하의 한기", en: "Chill of the Glacier"},
+                {ko: "폭풍의 분노", en: "Wrath of the Storm"},
+                {ko: "황혼의 단죄", en: "Twilight's Bane"},
+                {ko: "천공의 성검", en: "Sword of the Heavens"},
+                {ko: "대지의 분노", en: "Earth's Wrath"},
+                {ko: "영혼의 울림", en: "Echo of Souls"},
+                {ko: "시간의 사도", en: "Apostle of Time"},
+                {ko: "어둠의 포식자", en: "Void Devourer"},
+                {ko: "빛의 수호자", en: "Guardian of Light"},
+                {ko: "영겁의 파도", en: "Eternal Tide"},
+                {ko: "혼돈의 파멸", en: "Chaos Annihilator"},
+                {ko: "신들의 분노", en: "Wrath of the Gods"},
+                {ko: "창세의 빛", en: "Genesis Light"},
+                {ko: "우주의 파동", en: "Cosmic Wave"},
+                {ko: "영원한 순간", en: "Eternal Moment"},
+                {ko: "무한의 검", en: "Sword of Infinity"},
+                {ko: "태초의 빛", en: "Primordial Light"},
+                {ko: "창조의 파동", en: "Wave of Creation"}
+            ];
+
+            const hiddenItems = [
+                {ko: "제작자의 유골", en: "Creator's Remains"},
+                {ko: "희미한 빛의 파편", en: "Fragment of Faint Light"},
+                {ko: "희미한 어둠의 파편", en: "Fragment of Faint Darkness"}
+            ];
+
+            // 이미지 경로 생성 함수
+            function getImagePath(name, isHidden = false) {
+                if (isHidden) {
+                    // 히든 아이템 이미지 경로 (예시: images/hidden/creator_remains.png)
+                    const hiddenMap = {
+                        "제작자의 유골": "creator_remains",
+                        "희미한 빛의 파편": "fragment_light",
+                        "희미한 어둠의 파편": "fragment_dark"
+                    };
+                    return `images/hidden/${hiddenMap[name]}.png`;
+                } else {
+                    // 일반 검 이미지 경로 (예시: images/swords/sword_1.png)
+                    const index = swords.findIndex(sword => sword.ko === name) + 1;
+                    return `images/swords/sword_${index}.png`;
+                }
+            }
+
+            // 무기 카드 생성 함수
+            function createWeaponCard(item, isHidden = false) {
+                const card = document.createElement('div');
+                card.className = `weapon-card ${isHidden ? 'hidden-item' : ''}`;
+                
+                // 이미지 로드 확인을 위한 요소
+                const img = new Image();
+                img.src = getImagePath(item.ko, isHidden);
+                
+                let imageContent = '';
+                
+                img.onload = function() {
+                    // 이미지가 로드되면 이미지 표시
+                    imageContent = `<img src="${img.src}" alt="${item.ko}">`;
+                    card.querySelector('.weapon-image').innerHTML = imageContent;
+                };
+                
+                img.onerror = function() {
+                    // 이미지 로드 실패 시 플레이스홀더 표시
+                    const placeholderText = isHidden ? 
+                        `히든 아이템\n${item.ko}` : 
+                        `검 이미지 ${swords.findIndex(sword => sword.ko === item.ko) + 1}`;
+                    
+                    imageContent = `<div class="placeholder-img">${placeholderText}</div>`;
+                    card.querySelector('.weapon-image').innerHTML = imageContent;
+                };
+                
+                card.innerHTML = `
+                    <div class="weapon-image">
+                        ${imageContent || '<div class="placeholder-img">로드 중...</div>'}
+                    </div>
+                    <div class="weapon-name">${item.ko}</div>
+                    <div class="weapon-name-en">${item.en}</div>
+                `;
+                
+                return card;
+            }
+
+            // 컨테이너 요소 가져오기
+            const container = document.querySelector('.weapon-container');
+            
+            // 일반 검 추가
+            swords.forEach(sword => {
+                container.appendChild(createWeaponCard(sword));
+            });
+
+            // 히든 아이템 섹션 제목 추가
+            const hiddenTitle = document.createElement('div');
+            hiddenTitle.className = 'section-title';
+            hiddenTitle.textContent = '히든 아이템 (3개)';
+            container.appendChild(hiddenTitle);
+
+            // 히든 아이템 카드 생성
+            hiddenItems.forEach(item => {
+                container.appendChild(createWeaponCard(item, true));
+            });
+        </script>
+    </div>
+</body>
+</html>

@@ -91,6 +91,7 @@
     let swords = {};
     let isAdmin = false;
     let allUsers = [];
+    let isUpgrading = false; // Flag to track if an upgrade is in progress
 
     async function init() {
         try {
@@ -205,6 +206,8 @@
     }
 
     async function handleUpgrade() {
+        if (isUpgrading) return;
+        
         const currentLevel = user.current_sword_lvl;
         const currentSword = swords[currentLevel];
         
@@ -215,6 +218,8 @@
         if (upgradeCost <= 0) return alert("이미 최대 강화 레벨에 도달했습니다!");
         if (user.gold < upgradeCost) return alert("골드가 부족합니다!");
         if (currentLevel >= 20) return alert("최대 강화 레벨(20)에 도달했습니다!");
+        
+        isUpgrading = true; // Set upgrading flag
 
         const img = document.getElementById('s-img');
         img.classList.add('hammering');
@@ -259,6 +264,7 @@
             user.current_sword_lvl = newLevel;
             showEffect(result === 'success', message);
             updateUI();
+            isUpgrading = false; // Reset upgrading flag after completion
         }, 600);
     }
     
@@ -304,6 +310,8 @@
     }
 
     async function handleSell() {
+        if (isUpgrading) return alert("강화 중에는 판매할 수 없습니다.");
+        
         const currentLevel = user.current_sword_lvl;
         if (currentLevel === 1) return alert("기본 검은 판매할 수 없습니다.");
         
