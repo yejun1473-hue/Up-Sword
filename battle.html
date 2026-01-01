@@ -89,13 +89,14 @@
         <button class="btn-cancel" onclick="location.href='index.html'">매칭 취소</button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase client only once
-        if (!window.supabase) {
-            const { createClient } = window.supabase;
-            window.supabase = createClient('https://utfrjzcnefsbuadnkdud.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc');
-        }
-        const supabase = window.supabase;
+        // Initialize Supabase client
+        const supabase = supabase.createClient(
+            'https://utfrjzcnefsbuadnkdud.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc'
+        );
+        window.supabase = supabase;
         
         let myId = null;
         let myNick = '';
