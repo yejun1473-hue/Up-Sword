@@ -30,6 +30,10 @@
         .btn-main { flex: 2; padding: 18px; border-radius: 16px; border: none; background: #2d3748; color: white; font-weight: 800; font-size: 18px; cursor: pointer; box-shadow: 0 4px 0 #1a202c; }
         .btn-main:active { transform: translateY(2px); box-shadow: 0 2px 0 #1a202c; }
         .btn-sub { flex: 1; padding: 18px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; color: #4a5568; font-weight: 700; cursor: pointer; }
+    .gold-wrap { display: flex; align-items: center; gap: 10px; }
+    .code-btn { padding: 5px 12px; border-radius: 12px; border: none; font-weight: bold; background: #f1f2f6; cursor: pointer; }
+    .money-float { position: absolute; animation: floatUp 1s forwards; font-weight: bold; font-size: 14px; pointer-events: none; }
+    @keyframes floatUp { to { transform: translateY(-30px); opacity: 0; } }
 
         /* 애니메이션 효과 */
         .hammering { animation: shake 0.15s infinite; }
@@ -44,8 +48,19 @@
 
 <div class="game-container" id="game-ui">
     <div class="header">
-        <button onclick="location.href='index.html'" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;"><i class="fa-solid fa-house"></i></button>
-        <div id="u-gold" style="color:#ecc94b; font-weight:800; font-size:18px;">0G</div>
+        <div class="left-group">
+            <button onclick="location.href='index.html'" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;" title="홈으로">
+                <i class="fa-solid fa-house"></i>
+            </button>
+            <span id="u-nick" style="font-size: 14px;">...님</span>
+        </div>
+        <div class="gold-wrap" id="gold-anchor">
+            <span id="u-gold" style="color:#f1c40f; font-weight: bold;">0G</span>
+            <button class="code-btn" onclick="redeem()">코드</button>
+            <button id="adminBtn" style="background:none; border:none; color:white; font-size:20px; cursor:pointer; display:none; margin-left: 10px;">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
     </div>
 
     <div class="img-area"><img id="s-img" src="" class="sword-img"></div>
@@ -73,6 +88,8 @@
     
     let user = null;
     let swords = {};
+    let isAdmin = false;
+    let allUsers = [];
 
     async function init() {
         try {
@@ -90,6 +107,14 @@
 
             const { data: sData } = await supabaseClient.from('sword_data').select('*').order('level');
             sData.forEach(d => swords[d.level] = d);
+
+            // Check if user is admin
+            isAdmin = user.email === 'admin@example.com'; // 관리자 이메일로 변경 필요
+            if (isAdmin) {
+                document.getElementById('adminBtn').style.display = 'block';
+                document.getElementById('adminBtn').addEventListener('click', showAdminPanel);
+                await loadAllUsers();
+            }
 
             document.getElementById('loading').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
@@ -150,8 +175,119 @@
         const el = document.getElementById('full-effect');
         el.style.display = 'flex';
         el.style.backgroundColor = win ? 'rgba(72, 187, 120, 0.9)' : 'rgba(245, 101, 101, 0.9)';
-        el.innerText = win ? "강화 성공!" : "강화 실패...";
+        el.innerText = win ? "강화 성공!!" : "강화 실패!\n-1LV";
         setTimeout(() => el.style.display = 'none', 800);
+    }
+
+    function showGoldEffect(amt, isPlus) {
+        const el = document.createElement('div');
+        el.className = 'money-float';
+        el.style.color = isPlus ? '#3498db' : '#e74c3c';
+        el.innerText = (isPlus ? '+' : '-') + Math.abs(amt).toLocaleString() + 'G';
+        document.getElementById('gold-anchor').appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    }
+
+    async function loadAllUsers() {
+        const { data } = await supabaseClient.from('profiles').select('id, username, gold, current_sword_lvl, email');
+        allUsers = data || [];
+    }
+
+    function showAdminPanel() {
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '1000';
+        
+        let content = `
+            <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
+                <h2>관리자 패널</h2>
+                <div style="margin-bottom: 20px;">
+                    <h3>사용자 목록</h3>
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
+                        ${allUsers.map(u => `
+                            <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                                <strong>${u.username || u.email}</strong>
+                                <div>골드: <input type="number" id="gold-${u.id}" value="${u.gold}" style="width: 80px;"></div>
+                                <div>레벨: <input type="number" id="level-${u.id}" value="${u.current_sword_lvl}" min="1" style="width: 60px;"></div>
+                                <button onclick="updateUser('${u.id}')" style="margin-top: 5px; padding: 2px 8px; font-size: 12px;">수정</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <button onclick="this.parentNode.parentNode.remove()" style="padding: 8px 20px; background: #2d3748; color: white; border: none; border-radius: 5px; cursor: pointer;">닫기</button>
+            </div>
+        `;
+        
+        modal.innerHTML = content;
+        document.body.appendChild(modal);
+        
+        // Add the updateUser function to the window object
+        window.updateUser = async (userId) => {
+            const gold = parseInt(document.getElementById(`gold-${userId}`).value) || 0;
+            const level = parseInt(document.getElementById(`level-${userId}`).value) || 1;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('profiles')
+                    .update({ gold, current_sword_lvl: level })
+                    .eq('id', userId);
+                
+                if (error) throw error;
+                alert('사용자 정보가 업데이트되었습니다.');
+                await loadAllUsers();
+                modal.remove();
+                showAdminPanel(); // Refresh the panel
+            } catch (e) {
+                alert('업데이트 중 오류가 발생했습니다: ' + e.message);
+            }
+        };
+    }
+
+    async function redeem() {
+        const code = prompt("코드 입력");
+        if (!code) return;
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('reward_codes')
+                .select('*')
+                .eq('code', code)
+                .single();
+                
+            if (error || !data) {
+                return alert("유효하지 않은 코드입니다.");
+            }
+            
+            user.gold += data.reward_gold;
+            const { error: updateError } = await supabaseClient
+                .from('profiles')
+                .update({ gold: user.gold })
+                .eq('id', user.id);
+                
+            if (updateError) throw updateError;
+            
+            showGoldEffect(data.reward_gold, true);
+            updateUI();
+            alert(`성공적으로 ${data.reward_gold.toLocaleString()}G를 지급받았습니다!`);
+            
+            // 코드 사용 처리 (선택사항)
+            await supabaseClient
+                .from('reward_codes')
+                .delete()
+                .eq('code', code);
+                
+        } catch (e) {
+            console.error('Error redeeming code:', e);
+            alert('코드 사용 중 오류가 발생했습니다.');
+        }
     }
 
     init();
