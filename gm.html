@@ -199,15 +199,24 @@
     <div id="notification" class="notification"></div>
     
     <script>
+        // Supabase is already loaded via CDN in the head
         const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
         let currentUser = null;
         let allUsers = [];
         
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', async () => {
+            // Add event listener for logout button
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            
+            // Load users when page loads
+            await loadUsers();
+            
+            // Add search input event listener
+            document.getElementById('searchInput').addEventListener('input', filterUsers);
             // 세션 스토리지에서 GM 인증 확인
             const isGMAuthenticated = sessionStorage.getItem('gmAuthenticated') === 'true';
             
@@ -432,9 +441,20 @@
         }
         
         async function handleLogout() {
-            // 세션 스토리지에서 GM 인증 제거
-            sessionStorage.removeItem('gmAuthenticated');
-            window.location.href = 'index.html';
+            try {
+                // Sign out from Supabase
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                // 세션 스토리지에서 GM 인증 제거
+                sessionStorage.removeItem('gmAuthenticated');
+                
+                // Redirect to login page
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Error signing out:', error.message);
+                showNotification('로그아웃 중 오류가 발생했습니다: ' + error.message, 'error');
+            }
         }
         
         // 전역 함수로 노출
