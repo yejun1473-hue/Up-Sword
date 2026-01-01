@@ -203,15 +203,13 @@
         async function updateUser(id) {
             try {
                 const goldInput = document.getElementById(`g-${id}`);
-                const moneyInput = document.getElementById(`m-${id}`);
                 const lvlInput = document.getElementById(`l-${id}`);
                 
                 // 입력값 검증 및 변환
                 const gold = parseInt(goldInput.value, 10);
-                const money = parseInt(moneyInput.value, 10);
                 const lvl = parseInt(lvlInput.value, 10);
 
-                if (isNaN(gold) || isNaN(money) || isNaN(lvl)) {
+                if (isNaN(gold) || isNaN(lvl)) {
                     throw new Error('유효하지 않은 값이 있습니다. 숫자만 입력해주세요.');
                 }
 
@@ -224,7 +222,6 @@
                     .from('profiles')
                     .update({
                         gold: gold,
-                        money: money,
                         current_sword_lvl: lvl,
                         updated_at: new Date().toISOString()
                     })
@@ -236,11 +233,8 @@
                         message: error.message,
                         details: error.details,
                         hint: error.hint,
-                        data: { id, gold, money, lvl }
+                        data: { id, gold, lvl }
                     });
-                    if (error.code === '22P02') {
-                        throw new Error('잘못된 데이터 형식입니다. 숫자만 입력해주세요.');
-                    }
                     throw error;
                 }
                 
