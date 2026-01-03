@@ -140,8 +140,9 @@
     <script>
         // Initialize Supabase client
         async function initializeSupabase() {
+            // Wait for Supabase client to be loaded
             if (!window.supabase) {
-                await new Promise(resolve => {
+                await new Promise((resolve, reject) => {
                     const checkSupabase = setInterval(() => {
                         if (window.supabase) {
                             clearInterval(checkSupabase);
@@ -151,26 +152,43 @@
                     
                     setTimeout(() => {
                         clearInterval(checkSupabase);
-                        resolve();
+                        if (!window.supabase) {
+                            console.error('Supabase client failed to load');
+                            window.location.href = 'index.html';
+                            reject('Supabase client not found');
+                        }
                     }, 5000);
                 });
             }
             
-            if (window.supabase) {
-                supabase = window.supabase.createClient(
-                    'https://utfrjzcnefsbuadnkdud.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc',
-                    { 
-                        auth: { 
-                            persistSession: false,
-                            autoRefreshToken: false,
-                            detectSessionInUrl: false
-                        }
-                    }
-                );
-                return true;
+            // Initialize Supabase client
+            const supabaseUrl = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+            
+            window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true
+                }
+            });
+
+            // Check if user is authenticated
+            const { data: { session }, error } = await window.supabase.auth.getSession();
+            
+            if (error || !session) {
+                console.error('Not authenticated:', error);
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                return false;
             }
-            return false;
+
+            // Set current user info
+            currentUser = session.user;
+            myId = currentUser.id;
+            myNick = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Player';
+            
+            console.log('Authenticated as:', currentUser.email);
+            return true;
         }
 
         // Global variables
@@ -195,17 +213,9 @@
         // Initialize Supabase when DOM is ready
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const isInitialized = await initializeSupabase();
-                if (!isInitialized) {
-                    throw new Error('Failed to initialize Supabase');
-                }
-                
-                // Initialize battle after Supabase is ready
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', initBattle);
-                } else {
-                    initBattle();
-                }
+                const initialized = await initializeSupabase();
+                if (!initialized) return;
+                setupEventListeners();
             } catch (error) {
                 console.error('Failed to initialize Supabase:', error);
                 alert('서비스 초기화에 실패했습니다. 페이지를 새로고침 해주세요.');
