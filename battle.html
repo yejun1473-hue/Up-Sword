@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Up Sword - 배틀</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { background:#1a1a2e; color:#fff; font-family:'Pretendard',sans-serif; margin:0; padding:20px; }
+    .wrap { max-width:420px; margin:0 auto; }
+    .card { background: rgba(26,32,44,0.9); border:2px solid #4a5568; border-radius:18px; padding:18px; }
+    h1 { margin:0 0 10px 0; font-size:22px; color:#ecc94b; }
+    .row { margin-top:12px; text-align:left; }
+    label { display:block; font-size:12px; color:#cbd5e0; margin-bottom:6px; }
+    select, input { width:100%; padding:12px; border-radius:12px; border:1px solid #4a5568; background:#0f172a; color:#fff; box-sizing:border-box; }
+    .btns { display:flex; gap:10px; margin-top:14px; }
+    button { flex:1; padding:12px; border:none; border-radius:12px; font-weight:900; cursor:pointer; }
+    .btn-main { background:#4299e1; color:#fff; }
+    .btn-sub { background:#4a5568; color:#fff; }
+    .list { margin-top:14px; }
+    .item { padding:12px; border:1px solid #334155; border-radius:12px; margin-top:10px; background:rgba(0,0,0,0.25); }
+    .item b { color:#ecc94b; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>⚔️ 유저 배틀</h1>
+      <div class="row">
+        <label>상대 선택</label>
+        <select id="opponent"></select>
+      </div>
+      <div class="btns">
+        <button class="btn-sub" onclick="location.href='index.html'">뒤로</button>
+        <button class="btn-main" id="createBtn">배틀 생성</button>
+      </div>
+    </div>
+
+    <div class="card list" style="margin-top:16px;">
+      <h1 style="font-size:18px;">진행 중인 배틀</h1>
+      <div id="battleList"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let me = null;
+    let myProfile = null;
+
+    function statFromLevel(level) {
+      const lvl = Math.max(1, parseInt(level || 1, 10));
+      return {
+        level: lvl,
+        maxHp: 80 + lvl * 10,
+        hp: 80 + lvl * 10,
+        attack: 8 + lvl * 3
+      };
+    }
+
+    async function requireSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { location.href = 'login.html'; return null; }
+      me = session.user;
+      return session;
+    }
+
+    async function loadMyProfile() {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, nickname, username, current_sword_lvl')
+        .eq('id', me.id)
+        .single();
+      if (error) throw error;
+      myProfile = data;
+    }
+
+    async function loadOpponents() {
+      const sel = document.getElementById('opponent');
+      sel.innerHTML = '';
+
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('id, nickname, username, current_sword_lvl')
+        .neq('id', me.id)
+        .order('nickname', { ascending: true });
+
+      if (error) throw error;
+
+      (data || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.nickname || p.username || p.id.slice(0,6)} (검 Lv.${p.current_sword_lvl || 1})`;
+        sel.appendChild(opt);
+      });
+
+      if (!sel.value && sel.options.length > 0) sel.selectedIndex = 0;
+    }
+
+    async function createBattle() {
+      const opponentId = document.getElementById('opponent').value;
+      if (!opponentId) return alert('상대를 선택해 주세요.');
+
+      const { data: opp, error: oppErr } = await supabaseClient
+        .from('profiles')
+        .select('id, nickname, username, current_sword_lvl')
+        .eq('id', opponentId)
+        .single();
+      if (oppErr) throw oppErr;
+
+      const p1 = {
+        id: me.id,
+        name: myProfile.nickname || myProfile.username || 'Me',
+        ...statFromLevel(myProfile.current_sword_lvl)
+      };
+      const p2 = {
+        id: opp.id,
+        name: opp.nickname || opp.username || 'Opponent',
+        ...statFromLevel(opp.current_sword_lvl)
+      };
+
+      const initState = {
+        log: [`배틀 시작: ${p1.name} vs ${p2.name}`],
+        p1,
+        p2
+      };
+
+      const { data: battle, error } = await supabaseClient
+        .from('battles')
+        .insert([{ player1_id: p1.id, player2_id: p2.id, status: 'in_progress', current_turn: p1.id, state: initState }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      location.href = `battle-game.html?battleId=${battle.id}`;
+    }
+
+    async function loadMyBattles() {
+      const box = document.getElementById('battleList');
+      box.innerHTML = '불러오는 중...';
+
+      const { data, error } = await supabaseClient
+        .from('battles')
+        .select('id, status, current_turn, winner_id, updated_at, state')
+        .or(`player1_id.eq.${me.id},player2_id.eq.${me.id}`)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        box.innerHTML = '';
+        return;
+      }
+
+      const rows = data || [];
+      if (rows.length === 0) {
+        box.innerHTML = '<div class="item">진행 중인 배틀이 없습니다.</div>';
+        return;
+      }
+
+      box.innerHTML = rows.map(b => {
+        const s = b.state || {};
+        const p1Name = s.p1?.name || 'P1';
+        const p2Name = s.p2?.name || 'P2';
+        const turn = (b.current_turn === me.id) ? '내 턴' : '상대 턴';
+        const status = b.status;
+        return `
+          <div class="item" onclick="location.href='battle-game.html?battleId=${b.id}'" style="cursor:pointer;">
+            <div><b>${p1Name}</b> vs <b>${p2Name}</b></div>
+            <div style="margin-top:6px; font-size:12px; color:#cbd5e0;">${status} / ${turn}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function init() {
+      await requireSession();
+      await loadMyProfile();
+      await loadOpponents();
+      await loadMyBattles();
+
+      document.getElementById('createBtn').addEventListener('click', async () => {
+        try { await createBattle(); }
+        catch (e) { alert('배틀 생성 실패: ' + (e?.message || e)); }
+      });
+
+      setInterval(() => loadMyBattles(), 4000);
+    }
+
+    init().catch(e => alert('초기화 오류: ' + (e?.message || e)));
+  </script>
+</body>
+</html>

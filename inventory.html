@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Up Sword - 인벤토리</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { background:#0b1220; color:#fff; font-family:'Pretendard',sans-serif; margin:0; padding:20px; }
+    .wrap { max-width:520px; margin:0 auto; }
+    .card { background: rgba(26,32,44,0.9); border:2px solid #334155; border-radius:18px; padding:16px; }
+    h1 { margin:0; font-size:20px; color:#ecc94b; }
+    .row { margin-top:12px; }
+    .slots { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:12px; }
+    .slot { background:rgba(0,0,0,0.25); border:1px solid #334155; border-radius:14px; padding:10px; min-height:70px; }
+    .slot b { color:#ecc94b; }
+    .btns { display:flex; gap:10px; margin-top:12px; }
+    button { padding:12px; border:none; border-radius:12px; font-weight:900; cursor:pointer; }
+    .btn-main { background:#4299e1; color:#fff; }
+    .btn-sub { background:#4a5568; color:#fff; }
+    .list { margin-top:14px; }
+    .item { padding:12px; border:1px solid #334155; border-radius:14px; background:rgba(0,0,0,0.25); margin-top:10px; }
+    select { width:100%; padding:10px; border-radius:12px; border:1px solid #334155; background:#0f172a; color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🧳 인벤토리 (최대 3개 장착)</h1>
+      <div class="btns">
+        <button class="btn-sub" onclick="location.href='index.html'">뒤로</button>
+        <button class="btn-main" id="getSwordBtn">랜덤 검 획득</button>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <div style="font-size:12px; color:#cbd5e0;">장착 슬롯</div>
+        <div class="slots">
+          <div class="slot"><div><b>슬롯 1</b></div><div id="slot1">-</div></div>
+          <div class="slot"><div><b>슬롯 2</b></div><div id="slot2">-</div></div>
+          <div class="slot"><div><b>슬롯 3</b></div><div id="slot3">-</div></div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <div style="font-size:12px; color:#cbd5e0; margin-bottom:6px;">선택한 검을 슬롯에 장착</div>
+        <select id="swordSelect"></select>
+        <div class="btns" style="margin-top:10px;">
+          <button class="btn-sub" onclick="equipTo(1)">슬롯1 장착</button>
+          <button class="btn-sub" onclick="equipTo(2)">슬롯2 장착</button>
+          <button class="btn-sub" onclick="equipTo(3)">슬롯3 장착</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card list" style="margin-top:16px;">
+      <h1 style="font-size:18px;">보유한 검</h1>
+      <div id="swords"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let me = null;
+
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function randomSword() {
+      const rarities = ['common','common','common','rare','rare','epic','legendary'];
+      const rarity = rarities[randInt(0, rarities.length - 1)];
+      const base = { common: 10, rare: 16, epic: 24, legendary: 35 }[rarity];
+      const lvl = randInt(1, 10);
+      return {
+        sword_level: lvl,
+        sword_name: `${rarity.toUpperCase()} Sword +${lvl}`,
+        attack: base + lvl * 2,
+        rarity
+      };
+    }
+
+    async function requireSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { location.href = 'login.html'; return null; }
+      me = session.user;
+      return session;
+    }
+
+    async function loadSwords() {
+      const { data } = await supabaseClient
+        .from('user_swords')
+        .select('*')
+        .eq('user_id', me.id)
+        .order('created_at', { ascending: false });
+
+      const swords = data || [];
+
+      const list = document.getElementById('swords');
+      const sel = document.getElementById('swordSelect');
+      sel.innerHTML = '';
+
+      if (swords.length === 0) {
+        list.innerHTML = '<div class="item">보유한 검이 없습니다. 위에서 랜덤 검 획득을 눌러보세요.</div>';
+        return;
+      }
+
+      list.innerHTML = swords.map(s => `
+        <div class="item">
+          <div style="font-weight:900;">${s.sword_name}</div>
+          <div style="margin-top:6px; font-size:12px; color:#cbd5e0;">Lv.${s.sword_level} / ATK ${s.attack} / ${s.rarity}</div>
+        </div>
+      `).join('');
+
+      swords.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.sword_name} (ATK ${s.attack})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadSlots() {
+      const { data } = await supabaseClient
+        .from('user_inventory_slots')
+        .select('slot, sword_id, user_swords(id, sword_name, sword_level, attack, rarity)')
+        .eq('user_id', me.id);
+
+      const map = { 1: '-', 2: '-', 3: '-' };
+      (data || []).forEach(r => {
+        if (r.user_swords) {
+          map[r.slot] = `${r.user_swords.sword_name} (ATK ${r.user_swords.attack})`;
+        } else {
+          map[r.slot] = '-';
+        }
+      });
+
+      document.getElementById('slot1').textContent = map[1];
+      document.getElementById('slot2').textContent = map[2];
+      document.getElementById('slot3').textContent = map[3];
+    }
+
+    async function giveRandomSword() {
+      const sword = randomSword();
+      const { error } = await supabaseClient
+        .from('user_swords')
+        .insert([{ user_id: me.id, ...sword }]);
+      if (error) throw error;
+
+      await loadSwords();
+      await loadSlots();
+
+      try {
+        await bumpCollectAchievement();
+      } catch (_) {}
+    }
+
+    async function equipTo(slot) {
+      const swordId = document.getElementById('swordSelect').value;
+      if (!swordId) return alert('장착할 검을 선택해 주세요.');
+
+      const { error } = await supabaseClient
+        .from('user_inventory_slots')
+        .upsert({ user_id: me.id, slot, sword_id: swordId });
+
+      if (error) return alert('장착 실패: ' + error.message);
+      await loadSlots();
+    }
+
+    async function upsertUserAchievement(userId, achievementId, inc) {
+      const { data: row } = await supabaseClient
+        .from('user_achievements')
+        .select('progress, unlocked')
+        .eq('user_id', userId)
+        .eq('achievement_id', achievementId)
+        .maybeSingle();
+
+      const progress = (row?.progress || 0) + inc;
+
+      const { data: def } = await supabaseClient
+        .from('achievements')
+        .select('target')
+        .eq('id', achievementId)
+        .maybeSingle();
+
+      const target = def?.target || 1;
+      const unlocked = progress >= target;
+
+      await supabaseClient
+        .from('user_achievements')
+        .upsert({ user_id: userId, achievement_id: achievementId, progress, unlocked, unlocked_at: unlocked ? new Date().toISOString() : null });
+    }
+
+    async function bumpCollectAchievement() {
+      const { data } = await supabaseClient
+        .from('user_swords')
+        .select('id', { count: 'exact' })
+        .eq('user_id', me.id);
+
+      const count = (data || []).length;
+      await supabaseClient
+        .from('user_achievements')
+        .upsert({ user_id: me.id, achievement_id: 'collect_3', progress: count, unlocked: count >= 3, unlocked_at: (count >= 3) ? new Date().toISOString() : null });
+    }
+
+    async function init() {
+      await requireSession();
+      await loadSwords();
+      await loadSlots();
+
+      document.getElementById('getSwordBtn').addEventListener('click', async () => {
+        try { await giveRandomSword(); }
+        catch (e) { alert('검 획득 실패: ' + (e?.message || e)); }
+      });
+
+      window.equipTo = equipTo;
+    }
+
+    init().catch(e => alert('초기화 오류: ' + (e?.message || e)));
+  </script>
+</body>
+</html>

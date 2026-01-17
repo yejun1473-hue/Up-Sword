@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Up Sword - 미션</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { background:#0b1220; color:#fff; font-family:'Pretendard',sans-serif; margin:0; padding:20px; }
+    .wrap { max-width:520px; margin:0 auto; }
+    .card { background: rgba(26,32,44,0.9); border:2px solid #334155; border-radius:18px; padding:16px; }
+    h1 { margin:0; font-size:20px; color:#ecc94b; }
+    .item { padding:12px; border:1px solid #334155; border-radius:14px; background:rgba(0,0,0,0.25); margin-top:10px; }
+    .btns { display:flex; gap:10px; margin-top:12px; }
+    button { padding:12px; border:none; border-radius:12px; font-weight:900; cursor:pointer; }
+    .btn-sub { background:#4a5568; color:#fff; }
+    .btn-main { background:#48bb78; color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>📜 미션</h1>
+      <div class="btns">
+        <button class="btn-sub" onclick="location.href='index.html'">뒤로</button>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let me = null;
+
+    async function requireSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { location.href = 'login.html'; return null; }
+      me = session.user;
+      return session;
+    }
+
+    async function loadMissions() {
+      const { data: defs } = await supabaseClient
+        .from('missions')
+        .select('*')
+        .eq('active', true)
+        .order('id', { ascending: true });
+
+      const { data: mine } = await supabaseClient
+        .from('user_missions')
+        .select('*')
+        .eq('user_id', me.id);
+
+      const mineMap = new Map((mine || []).map(r => [r.mission_id, r]));
+
+      const list = document.getElementById('list');
+      const rows = defs || [];
+      if (rows.length === 0) {
+        list.innerHTML = '<div class="item">미션이 없습니다.</div>';
+        return;
+      }
+
+      list.innerHTML = rows.map(m => {
+        const st = mineMap.get(m.id) || { progress: 0, completed: false, claimed: false };
+        const prog = Math.min(st.progress || 0, m.target || 1);
+        const done = st.completed;
+        const claimable = done && !st.claimed;
+        const btn = claimable
+          ? `<button class="btn-main" onclick="claim('${m.id}', ${m.reward_gold || 0})">보상 받기</button>`
+          : `<button class="btn-sub" disabled>${done ? '완료' : '진행중'}</button>`;
+
+        return `
+          <div class="item">
+            <div style="font-weight:900;">${m.title}</div>
+            <div style="margin-top:6px; font-size:12px; color:#cbd5e0;">${m.description}</div>
+            <div style="margin-top:8px; font-size:12px;">진행: ${prog}/${m.target} / 보상: ${m.reward_gold}G</div>
+            <div class="btns">${btn}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function claim(missionId, rewardGold) {
+      const { data: row } = await supabaseClient
+        .from('user_missions')
+        .select('*')
+        .eq('user_id', me.id)
+        .eq('mission_id', missionId)
+        .maybeSingle();
+
+      if (!row?.completed || row.claimed) return;
+
+      const { data: prof } = await supabaseClient
+        .from('profiles')
+        .select('gold')
+        .eq('id', me.id)
+        .single();
+
+      await supabaseClient
+        .from('profiles')
+        .update({ gold: (prof?.gold || 0) + (rewardGold || 0) })
+        .eq('id', me.id);
+
+      await supabaseClient
+        .from('user_missions')
+        .update({ claimed: true })
+        .eq('user_id', me.id)
+        .eq('mission_id', missionId);
+
+      await loadMissions();
+      alert('보상 지급 완료!');
+    }
+
+    window.claim = claim;
+
+    async function init() {
+      await requireSession();
+      await loadMissions();
+    }
+
+    init().catch(e => alert('초기화 오류: ' + (e?.message || e)));
+  </script>
+</body>
+</html>

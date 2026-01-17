@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Up Sword - 업적</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { background:#0b1220; color:#fff; font-family:'Pretendard',sans-serif; margin:0; padding:20px; }
+    .wrap { max-width:520px; margin:0 auto; }
+    .card { background: rgba(26,32,44,0.9); border:2px solid #334155; border-radius:18px; padding:16px; }
+    h1 { margin:0; font-size:20px; color:#ecc94b; }
+    .item { padding:12px; border:1px solid #334155; border-radius:14px; background:rgba(0,0,0,0.25); margin-top:10px; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(236,201,75,0.2); color:#ecc94b; font-weight:900; font-size:12px; }
+    .btns { display:flex; gap:10px; margin-top:12px; }
+    button { padding:12px; border:none; border-radius:12px; font-weight:900; cursor:pointer; }
+    .btn-sub { background:#4a5568; color:#fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🏆 업적</h1>
+      <div class="btns">
+        <button class="btn-sub" onclick="location.href='index.html'">뒤로</button>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let me = null;
+
+    async function requireSession() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) { location.href = 'login.html'; return null; }
+      me = session.user;
+      return session;
+    }
+
+    async function loadAchievements() {
+      const { data: defs } = await supabaseClient
+        .from('achievements')
+        .select('*')
+        .eq('active', true)
+        .order('id', { ascending: true });
+
+      const { data: mine } = await supabaseClient
+        .from('user_achievements')
+        .select('*')
+        .eq('user_id', me.id);
+
+      const mineMap = new Map((mine || []).map(r => [r.achievement_id, r]));
+
+      const list = document.getElementById('list');
+      const rows = defs || [];
+      if (rows.length === 0) {
+        list.innerHTML = '<div class="item">업적이 없습니다.</div>';
+        return;
+      }
+
+      list.innerHTML = rows.map(a => {
+        const st = mineMap.get(a.id) || { progress: 0, unlocked: false };
+        const prog = Math.min(st.progress || 0, a.target || 1);
+        const unlocked = st.unlocked;
+        return `
+          <div class="item">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="font-weight:900;">${a.title}</div>
+              <div class="badge">${unlocked ? '달성' : '미달성'}</div>
+            </div>
+            <div style="margin-top:6px; font-size:12px; color:#cbd5e0;">${a.description}</div>
+            <div style="margin-top:8px; font-size:12px;">진행: ${prog}/${a.target}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function init() {
+      await requireSession();
+      await loadAchievements();
+    }
+
+    init().catch(e => alert('초기화 오류: ' + (e?.message || e)));
+  </script>
+</body>
+</html>
