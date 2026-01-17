@@ -81,8 +81,8 @@
             try {
                 const { data, error } = await client
                     .from('profiles')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                    .select('id, nickname, username, phone, email, gold, money, current_sword_lvl, is_banned, ban_reason')
+                    .order('nickname', { ascending: true });
 
                 if (error) throw error;
                 allUsers = data || [];
@@ -102,8 +102,8 @@
             list.innerHTML = users.map(u => `
                 <div class="user-card ${u.is_banned ? 'banned' : ''}">
                     <div class="user-info">
-                        <strong>${u.nickname || '이름 없음'}</strong> ${u.is_banned ? '<span style="color:red">(정지)</span>' : ''}
-                        <div class="user-email">${u.email}</div>
+                        <strong>${u.nickname || u.username || u.phone || '이름 없음'}</strong> ${u.is_banned ? '<span style="color:red">(정지)</span>' : ''}
+                        <div class="user-email">${u.email || ''}</div>
                     </div>
                     <div class="user-stats">
                         <div class="stat-box">

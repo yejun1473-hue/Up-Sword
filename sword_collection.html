@@ -205,75 +205,65 @@
     </a>
     
     <h1>무기 도감</h1>
-    
-    <div class="weapon-container">
-        <div class="section-title">일반 검 (39개)</div>
+        <div class="weapon-container">
+        <div class="section-title">일반 검 (20개)</div>
         
         <!-- 검 목록 자동 생성 -->
         <script>
             const swords = [
-                {ko: "녹슨 검", en: "Rusty Sword"},
-                {ko: "단조된 검", en: "Forged Sword"},
-                {ko: "단단한 강철검", en: "Sturdy Steel Sword"},
-                {ko: "날카로운 장검", en: "Sharp Longsword"},
-                {ko: "정교한 레이피어", en: "Elegant Rapier"},
-                {ko: "빛나는 은검", en: "Shining Silver Sword"},
-                {ko: "성기사의 검", en: "Paladin's Sword"},
-                {ko: "용의 이빨 검", en: "Dragon's Fang"},
-                {ko: "천둥의 검", en: "Sword of Thunder"},
-                {ko: "불꽃의 발라드", en: "Ballad of Flames"},
-                {ko: "달빛의 수호검", en: "Moonlight Guardian"},
-                {ko: "태양의 광휘", en: "Radiance of the Sun"},
-                {ko: "심연의 파동검", en: "Abyssal Wave Blade"},
-                {ko: "성스러운 심판", en: "Divine Judgment"},
-                {ko: "혼돈의 인도자", en: "Harbinger of Chaos"},
-                {ko: "영원의 수호자", en: "Eternal Guardian"},
-                {ko: "신성한 빛의 검", en: "Sacred Lightblade"},
-                {ko: "태초의 파동", en: "Primordial Pulse"},
-                {ko: "창세의 파멸", en: "Genesis Ruin"},
-                {ko: "우주의 심판자", en: "Cosmic Arbiter"},
-                {ko: "신성한 불꽃의 검", en: "Sacred Flameblade"},
-                {ko: "빙하의 한기", en: "Chill of the Glacier"},
-                {ko: "폭풍의 분노", en: "Wrath of the Storm"},
-                {ko: "황혼의 단죄", en: "Twilight's Bane"},
-                {ko: "천공의 성검", en: "Sword of the Heavens"},
-                {ko: "대지의 분노", en: "Earth's Wrath"},
-                {ko: "영혼의 울림", en: "Echo of Souls"},
-                {ko: "시간의 사도", en: "Apostle of Time"},
-                {ko: "어둠의 포식자", en: "Void Devourer"},
-                {ko: "빛의 수호자", en: "Guardian of Light"},
-                {ko: "영겁의 파도", en: "Eternal Tide"},
-                {ko: "혼돈의 파멸", en: "Chaos Annihilator"},
-                {ko: "신들의 분노", en: "Wrath of the Gods"},
-                {ko: "창세의 빛", en: "Genesis Light"},
-                {ko: "우주의 파동", en: "Cosmic Wave"},
-                {ko: "영원한 순간", en: "Eternal Moment"},
-                {ko: "무한의 검", en: "Sword of Infinity"},
-                {ko: "태초의 빛", en: "Primordial Light"},
-                {ko: "창조의 파동", en: "Wave of Creation"}
+                {level: 1, ko: "녹슨 검/첫 숨", en: "Rusty Sword / First Breath"},
+                {level: 2, ko: "단조검/불씨의 맹세", en: "Forged Blade / Ember Oath"},
+                {level: 3, ko: "강철검/현실을 가르는 날", en: "Steel Blade / Edge of Reality"},
+                {level: 4, ko: "장검/은빛 규율", en: "Longsword / Silver Rule"},
+                {level: 5, ko: "레이피어/바람을 찌르는 문장", en: "Rapier / Wind Sigil"},
+                {level: 6, ko: "은검/달의 맥박", en: "Silver Sword / Moon Pulse"},
+                {level: 7, ko: "성기사검/자비의 단죄", en: "Paladin Sword / Merciful Sentence"},
+                {level: 8, ko: "용아검/비늘 위의 맹약", en: "Dragon Fang / Scale Oath"},
+                {level: 9, ko: "천둥검/번개의 심장", en: "Thunder Sword / Lightning Heart"},
+                {level: 10, ko: "화염검/불꽃의 발라드", en: "Flameblade / Ballad of Fire"},
+                {level: 11, ko: "월광검/달빛의 수호", en: "Moonlight / Guardian"},
+                {level: 12, ko: "태양검/광휘의 엄정", en: "Sunblade / Radiant Discipline"},
+                {level: 13, ko: "심연검/바닥 없는 파동", en: "Abyss / Bottomless Wave"},
+                {level: 14, ko: "성심검/신성한 심판", en: "Sacred Heart / Judgment"},
+                {level: 15, ko: "혼돈검/질서의 파열", en: "Chaos / Fractured Order"},
+                {level: 16, ko: "영원검/순간을 봉인한 검", en: "Eternal / Sealed Moment"},
+                {level: 17, ko: "태초검/원초의 율동", en: "Primordial / First Rhythm"},
+                {level: 18, ko: "창세검/만물을 새로 쓰는 칼끝", en: "Genesis / Rewrite All"},
+                {level: 19, ko: "우주검/성간의 선고", en: "Cosmic / Interstellar Verdict"},
+                {level: 20, ko: "무한검/만물을 정화하는 칫솔:우주의 근원", en: "Infinity / Purifying Toothbrush: Source"}
             ];
 
             const hiddenItems = [
-                {ko: "제작자의 유골", en: "Creator's Remains"},
-                {ko: "희미한 빛의 파편", en: "Fragment of Faint Light"},
-                {ko: "희미한 어둠의 파편", en: "Fragment of Faint Darkness"}
+                {level: 1, ko: "반시의 비명", en: "Scream of a Split-Second"},
+                {level: 2, ko: "잊힌 문장/피로 쓴 서명", en: "Forgotten Phrase / Blood Signature"},
+                {level: 3, ko: "심연의 농담/웃지 못할 진실", en: "Abyss Joke / Unlaughable Truth"},
+                {level: 4, ko: "새벽을 훔친 손잡이", en: "Handle that Stole Dawn"},
+                {level: 5, ko: "별똥의 뼈/야간식", en: "Meteor Bone / Midnight Snack"},
+                {level: 6, ko: "왕좌의 먼지/경배의 잔재", en: "Throne Dust / Remains of Worship"},
+                {level: 7, ko: "신의 실수/깨진 완벽", en: "God's Mistake / Broken Perfection"},
+                {level: 8, ko: "시간의 등뼈/초침을 꺾는 칼", en: "Spine of Time / Breaks Seconds"},
+                {level: 9, ko: "우주의 귓속말/진공의 선율", en: "Cosmic Whisper / Vacuum Melody"},
+                {level: 10, ko: "천사와 악마의 합의서", en: "Angel & Devil Accord"},
+                {level: 11, ko: "세계의 반대편/거울의 이빨", en: "Other Side / Mirror Fang"},
+                {level: 12, ko: "이름 없는 신의 연필", en: "Nameless God's Pencil"},
+                {level: 13, ko: "현실을 지우는 지우개/검", en: "Reality Eraser / Blade"},
+                {level: 14, ko: "만물의 경계/틈새의 칼날", en: "Boundary / Gap Blade"},
+                {level: 15, ko: "죽음의 예절/검은 티스푼", en: "Etiquette of Death / Black Teaspoon"},
+                {level: 16, ko: "창조의 후회/붉은 각주", en: "Creator's Regret / Red Footnote"},
+                {level: 17, ko: "별자리의 판결/십이궁의 낙인", en: "Zodiac Verdict / Stigma"},
+                {level: 18, ko: "종말의 문턱/마지막 손잡이", en: "End Threshold / Last Handle"},
+                {level: 19, ko: "허무의 왕관/칼날", en: "Crown of Void / Blade"},
+                {level: 20, ko: "만물을 정화하는 칫솔:우주의 근원(히든)", en: "Purifying Toothbrush: Source (Hidden)"}
             ];
 
             // 이미지 경로 생성 함수
             function getImagePath(name, isHidden = false) {
-                if (isHidden) {
-                    // 히든 아이템 이미지 경로 (예시: images/hidden/creator_remains.png)
-                    const hiddenMap = {
-                        "제작자의 유골": "creator_remains",
-                        "희미한 빛의 파편": "fragment_light",
-                        "희미한 어둠의 파편": "fragment_dark"
-                    };
-                    return `images/hidden/${hiddenMap[name]}.png`;
-                } else {
-                    // 일반 검 이미지 경로 (예시: images/swords/sword_1.png)
-                    const index = swords.findIndex(sword => sword.ko === name) + 1;
-                    return `images/swords/sword_${index}.png`;
-                }
+                const index = isHidden
+                    ? hiddenItems.findIndex(item => item.ko === name) + 1
+                    : swords.findIndex(sword => sword.ko === name) + 1;
+                return isHidden
+                    ? `images/hidden/hidden_${index}.png`
+                    : `images/swords/sword_${index}.png`;
             }
 
             // 무기 카드 생성 함수
@@ -307,7 +297,7 @@
                     <div class="weapon-image">
                         ${imageContent || '<div class="placeholder-img">로드 중...</div>'}
                     </div>
-                    <div class="weapon-name">${item.ko}</div>
+                    <div class="weapon-name">[+${item.level}] ${item.ko}</div>
                     <div class="weapon-name-en">${item.en}</div>
                 `;
                 
@@ -325,7 +315,7 @@
             // 히든 아이템 섹션 제목 추가
             const hiddenTitle = document.createElement('div');
             hiddenTitle.className = 'section-title';
-            hiddenTitle.textContent = '히든 아이템 (3개)';
+            hiddenTitle.textContent = '히든 무기 (20개)';
             container.appendChild(hiddenTitle);
 
             // 히든 아이템 카드 생성

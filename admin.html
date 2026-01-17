@@ -156,9 +156,28 @@
             await supabaseClient.from('sword_data').delete().neq('level', -1);
             if(swordData.length > 0) await supabaseClient.from('sword_data').insert(swordData);
             
-            // 2. 보상 코드 데이터 (초기화 후 삽입)
-            await supabaseClient.from('reward_codes').delete().neq('reward_gold', -1);
-            if(rewardCodes.length > 0) await supabaseClient.from('reward_codes').insert(rewardCodes);
+            // 2. 보상 코드 데이터 (전체 삭제 금지: 사용 중/발급된 코드가 사라지는 문제 발생)
+            // - code를 키로 upsert
+            // - 화면에서 제거된 코드는 active=false로 처리
+            const { data: existingCodes } = await supabaseClient.from('reward_codes').select('code');
+            const existingSet = new Set((existingCodes || []).map(x => x.code));
+            const nextSet = new Set((rewardCodes || []).map(x => x.code));
+
+            for (const c of (rewardCodes || [])) {
+                await supabaseClient.from('reward_codes').upsert({
+                    code: c.code,
+                    reward_gold: c.reward_gold,
+                    max_uses: c.max_uses || 999,
+                    per_user_limit: c.per_user_limit || 1,
+                    active: true
+                });
+            }
+
+            for (const code of existingSet) {
+                if (!nextSet.has(code)) {
+                    await supabaseClient.from('reward_codes').update({ active: false }).eq('code', code);
+                }
+            }
             
             // 3. 유저 데이터 업데이트
             for(let u of userData) {

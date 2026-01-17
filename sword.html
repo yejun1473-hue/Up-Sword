@@ -94,6 +94,65 @@
     let allUsers = [];
     let isUpgrading = false; // Flag to track if an upgrade is in progress
 
+    const WEAPON_NAMES = {
+        normal: [
+            "무명의 검",
+            "녹슨 검/첫 숨",
+            "단조검/불씨의 맹세",
+            "강철검/현실을 가르는 날",
+            "장검/은빛 규율",
+            "레이피어/바람을 찌르는 문장",
+            "은검/달의 맥박",
+            "성기사검/자비의 단죄",
+            "용아검/비늘 위의 맹약",
+            "천둥검/번개의 심장",
+            "화염검/불꽃의 발라드",
+            "월광검/달빛의 수호",
+            "태양검/광휘의 엄정",
+            "심연검/바닥 없는 파동",
+            "성심검/신성한 심판",
+            "혼돈검/질서의 파열",
+            "영원검/순간을 봉인한 검",
+            "태초검/원초의 율동",
+            "창세검/만물을 새로 쓰는 칼끝",
+            "우주검/성간의 선고",
+            "무한검/만물을 정화하는 칫솔:우주의 근원"
+        ],
+        hidden: [
+            "봉인된 파편",
+            "반시의 비명",
+            "잊힌 문장/피로 쓴 서명",
+            "심연의 농담/웃지 못할 진실",
+            "새벽을 훔친 손잡이",
+            "별똥의 뼈/야간식",
+            "왕좌의 먼지/경배의 잔재",
+            "신의 실수/깨진 완벽",
+            "시간의 등뼈/초침을 꺾는 칼",
+            "우주의 귓속말/진공의 선율",
+            "천사와 악마의 합의서",
+            "세계의 반대편/거울의 이빨",
+            "이름 없는 신의 연필",
+            "현실을 지우는 지우개/검",
+            "만물의 경계/틈새의 칼날",
+            "죽음의 예절/검은 티스푼",
+            "창조의 후회/붉은 각주",
+            "별자리의 판결/십이궁의 낙인",
+            "종말의 문턱/마지막 손잡이",
+            "허무의 왕관/칼날",
+            "만물을 정화하는 칫솔:우주의 근원(히든)"
+        ]
+    };
+
+    function getWeaponType() {
+        return (user && user.current_weapon_type) ? user.current_weapon_type : 'normal';
+    }
+
+    function getWeaponName(type, level) {
+        const arr = WEAPON_NAMES[type] || WEAPON_NAMES.normal;
+        const idx = Math.max(0, Math.min(20, parseInt(level || 0, 10)));
+        return arr[idx] || arr[0];
+    }
+
     async function init() {
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -102,10 +161,13 @@
             const { data: p } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
             user = p;
 
-            // Level 0 방어 로직
-            if (!user.current_sword_lvl || user.current_sword_lvl < 1) {
-                user.current_sword_lvl = 1;
-                await supabaseClient.from('profiles').update({ current_sword_lvl: 1 }).eq('id', user.id);
+            if (user.current_sword_lvl === null || user.current_sword_lvl === undefined) {
+                user.current_sword_lvl = 0;
+            }
+
+            if (!user.current_weapon_type) {
+                user.current_weapon_type = 'normal';
+                await supabaseClient.from('profiles').update({ current_weapon_type: 'normal' }).eq('id', user.id);
             }
 
             const { data: sData } = await supabaseClient.from('sword_data').select('*').order('level');
@@ -146,20 +208,33 @@
 
     function updateUI() {
         const currentLevel = user.current_sword_lvl;
-        const item = swords[currentLevel] || swords[1];
+        const item = getSwordDataForLevel(currentLevel);
         const upgradeCost = getEnhancementCost(currentLevel);
         const sellPrice = getSellPrice(currentLevel);
         const successRate = getSuccessRate(currentLevel);
+
+        const weaponType = getWeaponType();
+        const weaponName = getWeaponName(weaponType, currentLevel);
         
         document.getElementById('u-nick').innerText = (user.username || '플레이어') + '님';
         document.getElementById('u-gold').innerText = (user.gold || 0).toLocaleString() + "G";
         document.getElementById('u-money').innerText = (user.money || 0).toLocaleString() + "M";
-        document.getElementById('s-name').innerText = `[+${item.level}] ${item.name}`;
+        document.getElementById('s-name').innerText = `[+${currentLevel}] ${weaponType === 'hidden' ? '[HIDDEN] ' : ''}${weaponName}`;
         document.getElementById('s-desc').innerText = item.description;
         document.getElementById('stat-cost').innerText = upgradeCost.toLocaleString();
         document.getElementById('stat-sell').innerText = sellPrice.toLocaleString();
         document.getElementById('stat-rate').innerText = successRate;
         document.getElementById('s-img').src = item.image_url;
+    }
+
+    function getSwordDataForLevel(level) {
+        const lv = Math.max(0, Math.min(20, parseInt(level || 0, 10)));
+        if (swords[lv]) return swords[lv];
+
+        for (let i = lv; i >= 0; i--) {
+            if (swords[i]) return swords[i];
+        }
+        return swords[1];
     }
     
     function getSuccessRate(level) {
@@ -241,6 +316,7 @@
         const result = determineEnhancementResult(rates);
         let newLevel = currentLevel;
         let message = "";
+        let nextWeaponType = getWeaponType();
         
         switch(result) {
             case 'success':
@@ -256,6 +332,7 @@
                 break;
             case 'destroy':
                 newLevel = 0;
+                nextWeaponType = Math.random() < 0.01 ? 'hidden' : 'normal';
                 message = "강화 실패! (검 파괴)";
                 break;
         }
@@ -265,13 +342,15 @@
             .from('profiles')
             .update({ 
                 gold: user.gold, 
-                current_sword_lvl: newLevel 
+                current_sword_lvl: newLevel,
+                current_weapon_type: nextWeaponType
             })
             .eq('id', user.id);
 
         setTimeout(() => {
             img.classList.remove('hammering');
             user.current_sword_lvl = newLevel;
+            user.current_weapon_type = nextWeaponType;
             showEffect(result === 'success', message);
             updateUI();
             isUpgrading = false; // Reset upgrading flag after completion
@@ -339,17 +418,17 @@
         if (isUpgrading) return alert("강화 중에는 판매할 수 없습니다.");
         
         const currentLevel = user.current_sword_lvl;
-        if (currentLevel === 1) return alert("기본 검은 판매할 수 없습니다.");
+        if (currentLevel === 0) return alert("0강 상태는 판매할 수 없습니다.");
         
         const sellPrice = getSellPrice(currentLevel);
         if (!confirm(`${sellPrice.toLocaleString()}G에 판매하시겠습니까?`)) return;
 
         user.gold += sellPrice;
-        user.current_sword_lvl = 1;
+        user.current_sword_lvl = 0;
         await supabaseClient.from('profiles')
             .update({ 
                 gold: user.gold, 
-                current_sword_lvl: 1 
+                current_sword_lvl: 0 
             })
             .eq('id', user.id);
         updateUI();

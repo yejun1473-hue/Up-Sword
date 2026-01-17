@@ -164,7 +164,8 @@
     }
 
     function updateUI() {
-        document.getElementById('u-nick').innerText = (user.nickname || "플레이어") + "님";
+        const nick = user.nickname || user.username || (user.email ? user.email.split('@')[0] : '') || "플레이어";
+        document.getElementById('u-nick').innerText = nick + "님";
         document.getElementById('u-gold').innerText = (user.gold || 0).toLocaleString();
         document.getElementById('u-money').innerText = (user.money || 0).toLocaleString();
         document.getElementById('u-avatar').src = user.avatar_url || DEFAULT_AVATAR;
