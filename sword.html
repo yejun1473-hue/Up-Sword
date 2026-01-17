@@ -222,7 +222,7 @@
         const weaponType = getWeaponType();
         const weaponName = getWeaponName(weaponType, currentLevel);
         
-        document.getElementById('u-nick').innerText = (user.username || '플레이어') + '님';
+        document.getElementById('u-nick').innerText = ((user.nickname && user.nickname.trim()) ? user.nickname : '플레이어') + '님';
         document.getElementById('u-gold').innerText = (user.gold || 0).toLocaleString() + "G";
         document.getElementById('u-money').innerText = (user.money || 0).toLocaleString() + "M";
         document.getElementById('s-name').innerText = `[+${currentLevel}] ${weaponType === 'hidden' ? '[HIDDEN] ' : ''}${weaponName}`;

@@ -71,7 +71,7 @@
     async function loadMyProfile() {
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('id, nickname, username, current_sword_lvl')
+        .select('id, nickname, current_sword_lvl')
         .eq('id', me.id)
         .single();
       if (error) throw error;
@@ -84,7 +84,7 @@
 
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('id, nickname, username, current_sword_lvl')
+        .select('id, nickname, current_sword_lvl')
         .neq('id', me.id)
         .order('nickname', { ascending: true });
 
@@ -93,7 +93,8 @@
       (data || []).forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = `${p.nickname || p.username || p.id.slice(0,6)} (검 Lv.${p.current_sword_lvl || 1})`;
+        const nick = (p.nickname && p.nickname.trim()) ? p.nickname : p.id.slice(0,6);
+        opt.textContent = `${nick} (검 Lv.${p.current_sword_lvl || 1})`;
         sel.appendChild(opt);
       });
 
@@ -106,19 +107,19 @@
 
       const { data: opp, error: oppErr } = await supabaseClient
         .from('profiles')
-        .select('id, nickname, username, current_sword_lvl')
+        .select('id, nickname, current_sword_lvl')
         .eq('id', opponentId)
         .single();
       if (oppErr) throw oppErr;
 
       const p1 = {
         id: me.id,
-        name: myProfile.nickname || myProfile.username || 'Me',
+        name: (myProfile.nickname && myProfile.nickname.trim()) ? myProfile.nickname : '플레이어',
         ...statFromLevel(myProfile.current_sword_lvl)
       };
       const p2 = {
         id: opp.id,
-        name: opp.nickname || opp.username || 'Opponent',
+        name: (opp.nickname && opp.nickname.trim()) ? opp.nickname : '상대',
         ...statFromLevel(opp.current_sword_lvl)
       };
 
