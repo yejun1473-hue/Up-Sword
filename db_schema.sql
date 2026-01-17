@@ -8,6 +8,28 @@ alter table public.profiles
 add column if not exists current_weapon_type text not null default 'normal'
 check (current_weapon_type in ('normal','hidden'));
 
+-- Track which base weapon the user currently holds (for discovery & catalog)
+alter table public.profiles
+add column if not exists current_weapon_key text not null default 'normal_01';
+
+-- Ensure profiles.username exists for GM/Battle pages
+alter table public.profiles
+add column if not exists username text;
+
+create index if not exists idx_profiles_username on public.profiles(username);
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'profiles_username_unique'
+  ) then
+    begin
+      alter table public.profiles add constraint profiles_username_unique unique (username);
+    exception when others then
+      -- if duplicates exist, skip unique until cleaned
+      raise notice 'profiles.username uniqueness not enforced due to existing duplicates';
+    end;
+  end if;
+end $$;
+
 do $$
 begin
   if exists (
@@ -109,6 +131,26 @@ create table if not exists public.user_achievements (
   updated_at timestamptz not null default now(),
   primary key (user_id, achievement_id)
 );
+
+-- Track user discovery progress per weapon type for the collection UI
+create table if not exists public.user_weapon_discoveries (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  weapon_type text not null check (weapon_type in ('normal','hidden')),
+  weapon_key text not null,
+  max_discovered_level int not null default 0 check (max_discovered_level between 0 and 20),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, weapon_type, weapon_key)
+);
+
+-- Sword catalog (33 kinds: 30 normal + 3 hidden). image_pattern may contain '{lvl}' placeholder
+create table if not exists public.sword_catalog (
+  weapon_key text primary key,
+  weapon_type text not null check (weapon_type in ('normal','hidden')),
+  name_ko text not null,
+  image_pattern text
+);
+
+create index if not exists idx_sword_catalog_type on public.sword_catalog(weapon_type);
  
 -- updated_at trigger helper
 create or replace function public.set_updated_at()
@@ -147,6 +189,8 @@ alter table public.missions enable row level security;
 alter table public.achievements enable row level security;
 alter table public.user_missions enable row level security;
 alter table public.user_achievements enable row level security;
+alter table public.user_weapon_discoveries enable row level security;
+alter table public.sword_catalog enable row level security;
  
 -- user_swords policies
 drop policy if exists "user_swords_select_own" on public.user_swords;
@@ -195,6 +239,24 @@ for select using (true);
 drop policy if exists "achievements_select_all" on public.achievements;
 create policy "achievements_select_all" on public.achievements
 for select using (true);
+
+-- sword_catalog readable by everyone
+drop policy if exists "sword_catalog_select_all" on public.sword_catalog;
+create policy "sword_catalog_select_all" on public.sword_catalog
+for select using (true);
+
+-- discoveries: users can read/write their own
+drop policy if exists "discoveries_select_own" on public.user_weapon_discoveries;
+create policy "discoveries_select_own" on public.user_weapon_discoveries
+for select using (auth.uid() = user_id);
+
+drop policy if exists "discoveries_insert_own" on public.user_weapon_discoveries;
+create policy "discoveries_insert_own" on public.user_weapon_discoveries
+for insert with check (auth.uid() = user_id);
+
+drop policy if exists "discoveries_update_own" on public.user_weapon_discoveries;
+create policy "discoveries_update_own" on public.user_weapon_discoveries
+for update using (auth.uid() = user_id);
  
 -- missions/achievements user tables policies
 drop policy if exists "user_missions_select_own" on public.user_missions;
@@ -235,6 +297,22 @@ on conflict (id) do update set
   target = excluded.target,
   reward_gold = excluded.reward_gold,
   active = excluded.active;
+
+-- Seed 30 normal + 3 hidden catalog entries
+do $$
+declare i int;
+begin
+  for i in 1..30 loop
+    insert into public.sword_catalog(weapon_key, weapon_type, name_ko, image_pattern)
+    values (format('normal_%02s', i), 'normal', format('일반검 %s', i), 'images/swords/normal_%02s/level_{lvl}.png')
+    on conflict (weapon_key) do nothing;
+  end loop;
+  for i in 1..3 loop
+    insert into public.sword_catalog(weapon_key, weapon_type, name_ko, image_pattern)
+    values (format('hidden_%02s', i), 'hidden', format('히든검 %s', i), 'images/swords/hidden_%02s/level_{lvl}.png')
+    on conflict (weapon_key) do nothing;
+  end loop;
+end$$;
  
 insert into public.achievements(id, title, description, target, badge, active)
 values

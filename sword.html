@@ -79,6 +79,7 @@
 
     <div class="btn-group">
         <button class="btn-sub" onclick="handleSell()">판매</button>
+        <button class="btn-sub" onclick="handleStore()">보관하기</button>
         <button class="btn-main" onclick="handleUpgrade()">강화하기</button>
     </div>
 </div>
@@ -168,6 +169,11 @@
             if (!user.current_weapon_type) {
                 user.current_weapon_type = 'normal';
                 await supabaseClient.from('profiles').update({ current_weapon_type: 'normal' }).eq('id', user.id);
+            }
+
+            if (!user.current_weapon_key) {
+                user.current_weapon_key = 'normal_01';
+                await supabaseClient.from('profiles').update({ current_weapon_key: 'normal_01' }).eq('id', user.id);
             }
 
             const { data: sData } = await supabaseClient.from('sword_data').select('*').order('level');
@@ -317,6 +323,7 @@
         let newLevel = currentLevel;
         let message = "";
         let nextWeaponType = getWeaponType();
+        let nextWeaponKey = user.current_weapon_key || 'normal_01';
         
         switch(result) {
             case 'success':
@@ -333,6 +340,14 @@
             case 'destroy':
                 newLevel = 0;
                 nextWeaponType = Math.random() < 0.01 ? 'hidden' : 'normal';
+                // reroll base weapon key within the type (normal_01.._30, hidden_01.._03)
+                if (nextWeaponType === 'normal') {
+                    const n = Math.floor(Math.random() * 30) + 1;
+                    nextWeaponKey = `normal_${String(n).padStart(2,'0')}`;
+                } else {
+                    const n = Math.floor(Math.random() * 3) + 1;
+                    nextWeaponKey = `hidden_${String(n).padStart(2,'0')}`;
+                }
                 message = "강화 실패! (검 파괴)";
                 break;
         }
@@ -343,7 +358,8 @@
             .update({ 
                 gold: user.gold, 
                 current_sword_lvl: newLevel,
-                current_weapon_type: nextWeaponType
+                current_weapon_type: nextWeaponType,
+                current_weapon_key: nextWeaponKey
             })
             .eq('id', user.id);
 
@@ -351,10 +367,63 @@
             img.classList.remove('hammering');
             user.current_sword_lvl = newLevel;
             user.current_weapon_type = nextWeaponType;
+            user.current_weapon_key = nextWeaponKey;
             showEffect(result === 'success', message);
             updateUI();
             isUpgrading = false; // Reset upgrading flag after completion
         }, 600);
+    }
+
+    async function handleStore() {
+        if (isUpgrading) return alert("강화 중에는 보관할 수 없습니다.");
+        const level = parseInt(user.current_sword_lvl || 0, 10);
+        if (level <= 0) return alert("0강 상태는 보관할 수 없습니다.");
+
+        const type = getWeaponType();
+        const key = user.current_weapon_key || 'normal_01';
+        const name = `${type === 'hidden' ? '[HIDDEN] ' : ''}${key}`;
+        const attack = 10 + level * 5;
+        const rarity = type === 'hidden' ? 'legendary' : (level >= 15 ? 'epic' : level >= 10 ? 'rare' : 'common');
+
+        try {
+            const { error: insErr } = await supabaseClient.from('user_swords').insert({
+                user_id: user.id,
+                sword_level: level,
+                sword_name: name,
+                attack: attack,
+                rarity: rarity
+            });
+            if (insErr) throw insErr;
+
+            // update discoveries (max discovered level)
+            const { data: existing } = await supabaseClient
+                .from('user_weapon_discoveries')
+                .select('max_discovered_level')
+                .eq('user_id', user.id)
+                .eq('weapon_type', type)
+                .eq('weapon_key', key)
+                .maybeSingle();
+
+            const nextMax = Math.max(existing?.max_discovered_level || 0, level);
+            if (!existing) {
+                await supabaseClient.from('user_weapon_discoveries').insert({
+                    user_id: user.id,
+                    weapon_type: type,
+                    weapon_key: key,
+                    max_discovered_level: nextMax
+                });
+            } else if (nextMax > (existing.max_discovered_level || 0)) {
+                await supabaseClient.from('user_weapon_discoveries')
+                    .update({ max_discovered_level: nextMax })
+                    .eq('user_id', user.id)
+                    .eq('weapon_type', type)
+                    .eq('weapon_key', key);
+            }
+
+            alert('현재 검을 인벤토리에 보관했습니다.');
+        } catch (e) {
+            alert('보관 중 오류: ' + (e?.message || e));
+        }
     }
     
     function getEnhancementRates(level) {

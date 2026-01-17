@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>무기 도감</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -205,124 +206,114 @@
     </a>
     
     <h1>무기 도감</h1>
-        <div class="weapon-container">
-        <div class="section-title">일반 검 (20개)</div>
-        
-        <!-- 검 목록 자동 생성 -->
-        <script>
-            const swords = [
-                {level: 1, ko: "녹슨 검/첫 숨", en: "Rusty Sword / First Breath"},
-                {level: 2, ko: "단조검/불씨의 맹세", en: "Forged Blade / Ember Oath"},
-                {level: 3, ko: "강철검/현실을 가르는 날", en: "Steel Blade / Edge of Reality"},
-                {level: 4, ko: "장검/은빛 규율", en: "Longsword / Silver Rule"},
-                {level: 5, ko: "레이피어/바람을 찌르는 문장", en: "Rapier / Wind Sigil"},
-                {level: 6, ko: "은검/달의 맥박", en: "Silver Sword / Moon Pulse"},
-                {level: 7, ko: "성기사검/자비의 단죄", en: "Paladin Sword / Merciful Sentence"},
-                {level: 8, ko: "용아검/비늘 위의 맹약", en: "Dragon Fang / Scale Oath"},
-                {level: 9, ko: "천둥검/번개의 심장", en: "Thunder Sword / Lightning Heart"},
-                {level: 10, ko: "화염검/불꽃의 발라드", en: "Flameblade / Ballad of Fire"},
-                {level: 11, ko: "월광검/달빛의 수호", en: "Moonlight / Guardian"},
-                {level: 12, ko: "태양검/광휘의 엄정", en: "Sunblade / Radiant Discipline"},
-                {level: 13, ko: "심연검/바닥 없는 파동", en: "Abyss / Bottomless Wave"},
-                {level: 14, ko: "성심검/신성한 심판", en: "Sacred Heart / Judgment"},
-                {level: 15, ko: "혼돈검/질서의 파열", en: "Chaos / Fractured Order"},
-                {level: 16, ko: "영원검/순간을 봉인한 검", en: "Eternal / Sealed Moment"},
-                {level: 17, ko: "태초검/원초의 율동", en: "Primordial / First Rhythm"},
-                {level: 18, ko: "창세검/만물을 새로 쓰는 칼끝", en: "Genesis / Rewrite All"},
-                {level: 19, ko: "우주검/성간의 선고", en: "Cosmic / Interstellar Verdict"},
-                {level: 20, ko: "무한검/만물을 정화하는 칫솔:우주의 근원", en: "Infinity / Purifying Toothbrush: Source"}
-            ];
+    <div class="weapon-container" id="weaponContainer"></div>
 
-            const hiddenItems = [
-                {level: 1, ko: "반시의 비명", en: "Scream of a Split-Second"},
-                {level: 2, ko: "잊힌 문장/피로 쓴 서명", en: "Forgotten Phrase / Blood Signature"},
-                {level: 3, ko: "심연의 농담/웃지 못할 진실", en: "Abyss Joke / Unlaughable Truth"},
-                {level: 4, ko: "새벽을 훔친 손잡이", en: "Handle that Stole Dawn"},
-                {level: 5, ko: "별똥의 뼈/야간식", en: "Meteor Bone / Midnight Snack"},
-                {level: 6, ko: "왕좌의 먼지/경배의 잔재", en: "Throne Dust / Remains of Worship"},
-                {level: 7, ko: "신의 실수/깨진 완벽", en: "God's Mistake / Broken Perfection"},
-                {level: 8, ko: "시간의 등뼈/초침을 꺾는 칼", en: "Spine of Time / Breaks Seconds"},
-                {level: 9, ko: "우주의 귓속말/진공의 선율", en: "Cosmic Whisper / Vacuum Melody"},
-                {level: 10, ko: "천사와 악마의 합의서", en: "Angel & Devil Accord"},
-                {level: 11, ko: "세계의 반대편/거울의 이빨", en: "Other Side / Mirror Fang"},
-                {level: 12, ko: "이름 없는 신의 연필", en: "Nameless God's Pencil"},
-                {level: 13, ko: "현실을 지우는 지우개/검", en: "Reality Eraser / Blade"},
-                {level: 14, ko: "만물의 경계/틈새의 칼날", en: "Boundary / Gap Blade"},
-                {level: 15, ko: "죽음의 예절/검은 티스푼", en: "Etiquette of Death / Black Teaspoon"},
-                {level: 16, ko: "창조의 후회/붉은 각주", en: "Creator's Regret / Red Footnote"},
-                {level: 17, ko: "별자리의 판결/십이궁의 낙인", en: "Zodiac Verdict / Stigma"},
-                {level: 18, ko: "종말의 문턱/마지막 손잡이", en: "End Threshold / Last Handle"},
-                {level: 19, ko: "허무의 왕관/칼날", en: "Crown of Void / Blade"},
-                {level: 20, ko: "만물을 정화하는 칫솔:우주의 근원(히든)", en: "Purifying Toothbrush: Source (Hidden)"}
-            ];
+    <div id="detailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:#fff; border-radius:12px; max-width:900px; width:95%; max-height:90vh; overflow:auto; padding:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 id="modalTitle" style="margin:0;">상세</h3>
+          <button onclick="closeModal()" style="border:none; background:#2d3748; color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer;">닫기</button>
+        </div>
+        <div id="levelsGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px;"></div>
+      </div>
+    </div>
 
-            // 이미지 경로 생성 함수
-            function getImagePath(name, isHidden = false) {
-                const index = isHidden
-                    ? hiddenItems.findIndex(item => item.ko === name) + 1
-                    : swords.findIndex(sword => sword.ko === name) + 1;
-                return isHidden
-                    ? `images/hidden/hidden_${index}.png`
-                    : `images/swords/sword_${index}.png`;
-            }
+    <script>
+      const SUPABASE_URL = 'https://utfrjzcnefsbuadnkdud.supabase.co';
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZnJqemNuZWZzYnVhZG5rZHVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MjE1MTYsImV4cCI6MjA4MjM5NzUxNn0.D3Za1nMw-x0JwOpkFuYceUHlagcpRdrpFqNUIP5Kjdc';
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            // 무기 카드 생성 함수
-            function createWeaponCard(item, isHidden = false) {
-                const card = document.createElement('div');
-                card.className = `weapon-card ${isHidden ? 'hidden-item' : ''}`;
-                
-                // 이미지 로드 확인을 위한 요소
-                const img = new Image();
-                img.src = getImagePath(item.ko, isHidden);
-                
-                let imageContent = '';
-                
-                img.onload = function() {
-                    // 이미지가 로드되면 이미지 표시
-                    imageContent = `<img src="${img.src}" alt="${item.ko}">`;
-                    card.querySelector('.weapon-image').innerHTML = imageContent;
-                };
-                
-                img.onerror = function() {
-                    // 이미지 로드 실패 시 플레이스홀더 표시
-                    const placeholderText = isHidden ? 
-                        `히든 아이템\n${item.ko}` : 
-                        `검 이미지 ${swords.findIndex(sword => sword.ko === item.ko) + 1}`;
-                    
-                    imageContent = `<div class="placeholder-img">${placeholderText}</div>`;
-                    card.querySelector('.weapon-image').innerHTML = imageContent;
-                };
-                
-                card.innerHTML = `
-                    <div class="weapon-image">
-                        ${imageContent || '<div class="placeholder-img">로드 중...</div>'}
-                    </div>
-                    <div class="weapon-name">[+${item.level}] ${item.ko}</div>
-                    <div class="weapon-name-en">${item.en}</div>
-                `;
-                
-                return card;
-            }
+      let discoveries = {};
 
-            // 컨테이너 요소 가져오기
-            const container = document.querySelector('.weapon-container');
-            
-            // 일반 검 추가
-            swords.forEach(sword => {
-                container.appendChild(createWeaponCard(sword));
-            });
+      function replaceLvl(pattern, lvl) {
+        return (pattern || '').replace('{lvl}', String(lvl));
+      }
 
-            // 히든 아이템 섹션 제목 추가
-            const hiddenTitle = document.createElement('div');
-            hiddenTitle.className = 'section-title';
-            hiddenTitle.textContent = '히든 무기 (20개)';
-            container.appendChild(hiddenTitle);
+      function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
 
-            // 히든 아이템 카드 생성
-            hiddenItems.forEach(item => {
-                container.appendChild(createWeaponCard(item, true));
-            });
-        </script>
+      async function openDetail(weapon) {
+        document.getElementById('modalTitle').innerText = `${weapon.name_ko} (0~20강)`;
+        const grid = document.getElementById('levelsGrid');
+        grid.innerHTML = '';
+        const key = weapon.weapon_key;
+        const maxLv = discoveries[key] ?? 0;
+        for (let lv = 0; lv <= 20; lv++) {
+          const cell = document.createElement('div');
+          cell.style.border = '1px solid #e2e8f0';
+          cell.style.borderRadius = '8px';
+          cell.style.padding = '8px';
+          cell.style.textAlign = 'center';
+          const img = document.createElement('img');
+          img.style.width = '100%';
+          img.style.height = '100px';
+          img.style.objectFit = 'contain';
+          if (lv <= maxLv) {
+            img.src = replaceLvl(weapon.image_pattern, lv);
+          } else {
+            img.alt = '미발견';
+          }
+          const cap = document.createElement('div');
+          cap.style.marginTop = '6px';
+          cap.style.fontWeight = '700';
+          cap.innerText = `+${lv}`;
+          cell.appendChild(img);
+          cell.appendChild(cap);
+          grid.appendChild(cell);
+        }
+        document.getElementById('detailModal').style.display = 'flex';
+      }
+
+      function cardEl(weapon, discoveredMax) {
+        const wrap = document.createElement('div');
+        wrap.className = `weapon-card ${weapon.weapon_type === 'hidden' ? 'hidden-item' : ''}`;
+        wrap.innerHTML = `
+          <div class="weapon-image">
+            ${weapon.image_pattern ? `<img src="${replaceLvl(weapon.image_pattern, Math.min(1, discoveredMax))}" alt="${weapon.name_ko}">` : '<div class="placeholder-img">이미지 없음</div>'}
+          </div>
+          <div class="weapon-name">${weapon.name_ko}</div>
+          <div class="weapon-name-en">${weapon.weapon_type.toUpperCase()} · 발견: ${discoveredMax}/20</div>
+        `;
+        wrap.addEventListener('click', () => openDetail(weapon));
+        return wrap;
+      }
+
+      async function init() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { location.href = 'login.html'; return; }
+        const uid = session.user.id;
+
+        const { data: catalog } = await sb.from('sword_catalog').select('*').order('weapon_type').order('weapon_key');
+
+        const { data: disc } = await sb
+          .from('user_weapon_discoveries')
+          .select('weapon_key, max_discovered_level')
+          .eq('user_id', uid);
+        discoveries = Object.fromEntries((disc || []).map(d => [d.weapon_key, d.max_discovered_level]));
+
+        const container = document.getElementById('weaponContainer');
+        container.innerHTML = '';
+
+        const normalTitle = document.createElement('div');
+        normalTitle.className = 'section-title';
+        normalTitle.textContent = '일반 검 (30개)';
+        container.appendChild(normalTitle);
+
+        (catalog || []).filter(w => w.weapon_type === 'normal').forEach(w => {
+          container.appendChild(cardEl(w, discoveries[w.weapon_key] ?? 0));
+        });
+
+        const hiddenTitle = document.createElement('div');
+        hiddenTitle.className = 'section-title';
+        hiddenTitle.textContent = '히든 검 (3개)';
+        container.appendChild(hiddenTitle);
+
+        (catalog || []).filter(w => w.weapon_type === 'hidden').forEach(w => {
+          container.appendChild(cardEl(w, discoveries[w.weapon_key] ?? 0));
+        });
+      }
+
+      init().catch(e => alert('도감 로드 오류: ' + (e?.message || e)));
+    </script>
     </div>
 </body>
 </html>
